@@ -1184,16 +1184,28 @@ bool skeet_t::extra()
     {
         HMODULE hGor = GetModuleHandleA("gameoverlayrenderer.dll");
         if (hGor) {
-            auto gorScan1 = PatternScan(hGor, "3D ? ? ? ? 73 ? 68 ? ? ? ? E8 ? ? ? ? 8B 0D ? ? ? ? 83 C4 ? ? ? 6A ? FF 50 ? 3B 5F");
+            auto gorScan1 = PatternScan(hGor, "3D ? ? ? ? 73 ? 68 ? ? ? ? E8 ? ? ? ? 8B 0D ? ? ? ? 83 C4 ? 8B 01 6A ? FF 50 ? 3B ? ?");
             if (!gorScan1) {
                 gorScan1 = PatternScan(hGor, "3D ? ? ? ? 73 1A 68 ? ? ? ? E8 ? ? ? ? 8B 0D ? ? ? ? 83 C4 04 8B 01 6A 00 FF 50 14 3B 7B 3C");
             }
 
+
             if (gorScan1) {
-                *(uint32_t*)0x43468D94 = (uint32_t)gorScan1;
+                auto beginCall = (uint8_t*)0x433841A7;  // call dword ptr [eax + 0x24]
+                auto endCall = (uint8_t*)0x433841BC;    // call dword ptr [eax + 0x28]
+                bool oldLayout = beginCall[0] == 0xFF && beginCall[1] == 0x50 && beginCall[2] == 0x24 &&
+                                 endCall[0] == 0xFF && endCall[1] == 0x50 && endCall[2] == 0x28;
+                bool newLayout = beginCall[2] == 0x28 && endCall[2] == 0x2C;
+                if (oldLayout) {
+                    beginCall[2] = 0x28;
+                    endCall[2] = 0x2C;
+                }
+                if (oldLayout || newLayout) {
+                    *(uint32_t*)0x43468D94 = (uint32_t)gorScan1;
+                }
             }
 
-            auto gorScan2 = PatternScan(hGor, "89 3D ? ? ? ? F3 0F 10 87");
+            auto gorScan2 = PatternScan(hGor, "89 ? ? ? ? ? F3 0F 10 ? ? ? 00 00 F3 0F 11 05 ? ? ? ? F3 0F 10 ? ? ? 00 00");
             if (!gorScan2) {
                 gorScan2 = PatternScan(hGor, "89 1D ? ? ? ? F3 0F 10 83");
             }
